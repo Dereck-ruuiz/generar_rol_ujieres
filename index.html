@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Generador de Rol</title>
+
+<style>
+
+body{
+font-family:Arial;
+background:#f2f2f2;
+margin:0;
+padding:20px;
+}
+
+.container{
+max-width:1000px;
+margin:auto;
+background:white;
+padding:20px;
+border-radius:10px;
+box-shadow:0 0 10px rgba(0,0,0,0.15);
+}
+
+h1{
+text-align:center;
+}
+
+input,textarea,button{
+width:100%;
+padding:10px;
+margin-top:10px;
+font-size:16px;
+border-radius:5px;
+border:1px solid #ccc;
+}
+
+button{
+background:#2e7dff;
+color:white;
+border:none;
+cursor:pointer;
+}
+
+button:hover{
+background:#1b5ed6;
+}
+
+.actions{
+display:grid;
+grid-template-columns:1fr 1fr 1fr;
+gap:10px;
+margin-top:10px;
+}
+
+table{
+width:100%;
+border-collapse:collapse;
+margin-top:20px;
+}
+
+th,td{
+border:1px solid #ccc;
+padding:8px;
+text-align:center;
+}
+
+th{
+background:#e8e8e8;
+}
+
+@media(max-width:700px){
+
+.actions{
+grid-template-columns:1fr;
+}
+
+table{
+font-size:12px;
+}
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>Generador de Rol</h1>
+
+<label>Mes</label>
+<input type="number" id="mes" min="1" max="12">
+
+<label>Año</label>
+<input type="number" id="anio">
+
+<label>Nombres (uno por línea)</label>
+<textarea id="nombres" rows="6"></textarea>
+
+<button onclick="guardarNombres()">Guardar nombres</button>
+
+<button onclick="generarRol()">Generar Rol</button>
+
+<div class="actions">
+
+<button onclick="copiarTabla()">Copiar tabla</button>
+
+<button onclick="descargarExcel()">Descargar Excel</button>
+
+<button onclick="descargarWord()">Descargar Word</button>
+
+</div>
+
+<div id="resultado"></div>
+
+</div>
+
+<script>
+
+let indice=0;
+
+function persona(lista){
+
+let p=lista[indice % lista.length];
+
+indice++;
+
+return p;
+
+}
+
+function dosPersonas(lista){
+
+let a=persona(lista);
+
+let b=persona(lista);
+
+return "(A) "+a+"<br>(B) "+b;
+
+}
+
+function guardarNombres(){
+
+let nombres=document.getElementById("nombres").value;
+
+localStorage.setItem("nombresRol",nombres);
+
+alert("Nombres guardados");
+
+}
+
+window.onload=function(){
+
+let guardados=localStorage.getItem("nombresRol");
+
+if(guardados){
+
+document.getElementById("nombres").value=guardados;
+
+}
+
+}
+
+function generarRol(){
+
+indice=0;
+
+let mes=parseInt(document.getElementById("mes").value);
+
+let anio=parseInt(document.getElementById("anio").value);
+
+let nombres=document.getElementById("nombres").value
+.split("\n")
+.map(n=>n.trim())
+.filter(n=>n!="");
+
+if(nombres.length<7){
+
+alert("Se recomiendan al menos 7 personas");
+
+return;
+
+}
+
+let diasMes=new Date(anio,mes,0).getDate();
+
+let dias=["Domingo","Lunes","Martes","Miércoles","Jueves","Viernes","Sábado"];
+
+let meses=[
+"Enero","Febrero","Marzo","Abril","Mayo","Junio",
+"Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"
+];
+
+let tabla="<table>";
+
+tabla+=`
+<tr>
+<th>Horario</th>
+<th>Turno</th>
+<th>Entrada</th>
+<th>Sección 1</th>
+<th>Sección 2</th>
+<th>Zona baños</th>
+</tr>
+`;
+
+for(let d=1; d<=diasMes; d++){
+
+let fecha=new Date(anio,mes-1,d);
+
+let dia=fecha.getDay();
+
+if(dia==0 || dia==3 || dia==5){
+
+let texto=dias[dia]+" "+String(d).padStart(2,'0')+" de "+meses[mes-1];
+
+if(dia==0){
+
+tabla+=fila(texto,"Matutino",nombres,true);
+
+tabla+=fila(texto,"Vespertino",nombres,true);
+
+}
+
+else if(dia==3){
+
+tabla+=fila(texto,"Vespertino",nombres,true);
+
+}
+
+else if(dia==5){
+
+tabla+=filaViernes(texto,nombres);
+
+}
+
+}
+
+}
+
+tabla+="</table>";
+
+document.getElementById("resultado").innerHTML=tabla;
+
+}
+
+function fila(fecha,turno,nombres){
+
+return `
+<tr>
+<td>${fecha}</td>
+<td>${turno}</td>
+<td>${dosPersonas(nombres)}</td>
+<td>${dosPersonas(nombres)}</td>
+<td>${dosPersonas(nombres)}</td>
+<td>${persona(nombres)}</td>
+</tr>
+`;
+
+}
+
+function filaViernes(fecha,nombres){
+
+return `
+<tr>
+<td>${fecha}</td>
+<td>Vespertino</td>
+<td>${dosPersonas(nombres)}</td>
+<td>${persona(nombres)}</td>
+<td>${persona(nombres)}</td>
+<td>${persona(nombres)}</td>
+</tr>
+`;
+
+}
+
+function copiarTabla(){
+
+let tabla=document.querySelector("table");
+
+let rango=document.createRange();
+
+rango.selectNode(tabla);
+
+window.getSelection().removeAllRanges();
+
+window.getSelection().addRange(rango);
+
+document.execCommand("copy");
+
+alert("Tabla copiada");
+
+}
+
+function descargarExcel(){
+
+let tabla=document.querySelector("table").outerHTML;
+
+let archivo=`
+<html>
+<head>
+<meta charset="UTF-8">
+</head>
+<body>
+${tabla}
+</body>
+</html>
+`;
+
+let blob=new Blob([archivo],{type:"application/vnd.ms-excel"});
+
+let link=document.createElement("a");
+
+link.href=URL.createObjectURL(blob);
+
+link.download="rol.xls";
+
+link.click();
+
+}
+
+function descargarWord(){
+
+let tabla=document.querySelector("table").outerHTML;
+
+let archivo=`
+<html>
+<head>
+<meta charset="UTF-8">
+</head>
+<body>
+${tabla}
+</body>
+</html>
+`;
+
+let blob=new Blob([archivo],{type:"application/msword"});
+
+let link=document.createElement("a");
+
+link.href=URL.createObjectURL(blob);
+
+link.download="rol.doc";
+
+link.click();
+
+}
+
+</script>
+
+</body>
+</html>
