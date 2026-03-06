@@ -123,9 +123,25 @@ font-size:12px;
 
 let indice=0;
 
+function mezclar(lista){
+
+for(let i = lista.length - 1; i > 0; i--){
+
+let j = Math.floor(Math.random() * (i + 1));
+
+[lista[i], lista[j]] = [lista[j], lista[i]];
+
+}
+
+}
+
 function persona(lista){
 
-let p=lista[indice % lista.length];
+if(indice % lista.length === 0){
+mezclar(lista);
+}
+
+let p = lista[indice % lista.length];
 
 indice++;
 
@@ -177,6 +193,8 @@ let nombres=document.getElementById("nombres").value
 .split("\n")
 .map(n=>n.trim())
 .filter(n=>n!="");
+
+mezclar(nombres);
 
 if(nombres.length<7){
 
